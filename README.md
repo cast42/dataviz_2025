@@ -1,10 +1,16 @@
 # INSTALL
 
-## Install tools
+## Install tools uv package manager and just task runner
 
 ```bash
 brew install uv
 brew install just
+```
+
+## Install Astral typechecker ty globally
+
+```bash
+uv tool install ty@latest
 ```
 
 ## Create a new local repo
@@ -36,7 +42,11 @@ git branch -M main
 git push -u origin main
 ```
 
-## Copy my justfille
+## Copy my justfile
+
+```bash
+curl -L -O https://raw.githubusercontent.com/cast42/dataviz_2025/main/justfile
+```
 
 Run the following command
 
@@ -60,4 +70,18 @@ To perform type checking, run
 
 ```bash
 just typing *.py
+```
+
+# Marimo notebooks
+
+## Install marimo
+
+```bash
+uv add marimo
+```
+
+## Run marimo
+
+```bash
+uv run marimo edit my_notebook.py
 ```
