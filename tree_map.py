@@ -84,6 +84,12 @@ def _(alt, df):
             ],
         )
         # .properties(width=500, height=500)
+        .properties(title="Relatieve total revenue for hierarchy1")
+        .configure_title(
+            fontSize=34,     # increase size
+            anchor="start",  # or "middle" for centered
+            fontWeight="bold"
+        )
     )
 
     chart
