@@ -7,10 +7,30 @@ brew install uv
 brew install just
 ```
 
-## Install Astral typechecker ty globally
+## Install Astral typechecker ty globally of for this project as dev dependency
+
+Global install:
 
 ```bash
 uv tool install ty@latest
+```
+
+If you do not want to install it globally, you can just install it as a dev dependency for this project with:
+
+```bash
+uv add --group dev ty
+```
+
+As ty is already a dev dependency in this project, you can just run:
+
+```bash
+uv sync
+```
+
+or
+
+```bash
+just install
 ```
 
 ## Create a new local repo
