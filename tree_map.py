@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 from typing import Final, Tuple
 
@@ -64,23 +65,39 @@ def _normalize_metric(metric: str) -> Tuple[str, str]:
     return column_name, label
 
 
-def load_hierarchy_data(column: str, metric: str = "revenue") -> pd.DataFrame:
+def load_hierarchy_data(
+    column: str,
+    metric: str = "revenue",
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> pd.DataFrame:
     """Load hierarchy metric data for the requested column using DuckDB."""
     parquet_path = _ensure_data_path()
     hierarchy_column, _ = _normalize_hierarchy_column(column)
     metric_column, _ = _normalize_metric(metric)
+
+    if (start_date is None) ^ (end_date is None):  # pragma: no cover - defensive
+        msg = "Both start_date and end_date must be provided together."
+        raise ValueError(msg)
+
+    filters = ""
+    params = [str(parquet_path)]
+    if start_date and end_date:
+        filters = "\n        WHERE date BETWEEN ? AND ?"
+        params.extend([start_date.isoformat(), end_date.isoformat()])
 
     query = f"""
         SELECT
             {hierarchy_column} AS hierarchy_id,
             SUM({metric_column}) AS total_value
         FROM read_parquet(?)
+        {filters}
         GROUP BY {hierarchy_column}
         ORDER BY total_value DESC
     """
 
     with duckdb.connect() as con:
-        df = con.execute(query, [str(parquet_path)]).fetchdf()
+        df = con.execute(query, params).fetchdf()
 
     return df
 
@@ -147,9 +164,14 @@ def create_hierarchy_chart(
     return figure
 
 
-def build_hierarchy_treemap_chart(column: str, metric: str = "revenue") -> go.Figure:
+def build_hierarchy_treemap_chart(
+    column: str,
+    metric: str = "revenue",
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> go.Figure:
     """Convenience helper that loads, processes, and plots the treemap chart."""
-    raw_df = load_hierarchy_data(column, metric)
+    raw_df = load_hierarchy_data(column, metric, start_date, end_date)
     processed_df = process_hierarchy_data(raw_df, column, metric)
     return create_hierarchy_chart(processed_df, column, metric)
 
