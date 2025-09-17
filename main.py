@@ -5,7 +5,7 @@ import duckdb
 
 def _quote_identifier(name: str) -> str:
     """Return a DuckDB-safe identifier."""
-    return f'"{name.replace("\"", "\"\"")}"'
+    return f'"{name.replace('"', '""')}"'
 
 
 def _quote_literal(value: str) -> str:

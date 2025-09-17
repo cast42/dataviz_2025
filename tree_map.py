@@ -3,11 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Final
 
-import altair as alt
 import duckdb
 import pandas as pd
-import squarify
-
+import plotly.graph_objects as go
 
 DATA_DIR: Final[Path] = Path(__file__).resolve().parent / "data"
 DATA_PATH: Final[Path] = DATA_DIR / "sales_stores_hierarchy_merged.parquet"
@@ -40,54 +38,53 @@ def load_hierarchy1_data() -> pd.DataFrame:
 
 
 def process_hierarchy1_data(df: pd.DataFrame) -> pd.DataFrame:
-    """Prepare treemap layout coordinates for the hierarchy 1 revenue data."""
+    """Prepare hierarchy 1 revenue data for treemap visualization."""
     if df.empty:
         msg = "No data available to build the treemap."
         raise ValueError(msg)
 
     working = df.copy()
+    working.sort_values(
+        "total_revenue", ascending=False, inplace=True, ignore_index=True
+    )
 
-    values = working["total_revenue"].tolist()
-    normed_sizes = squarify.normalize_sizes(values, 100, 100)
-    rectangles = squarify.squarify(normed_sizes, 0, 0, 100, 100)
+    total = working["total_revenue"].sum()
+    if total == 0:
+        msg = "Revenue totals are zero; unable to build treemap."
+        raise ValueError(msg)
 
-    working["x"] = [rect["x"] for rect in rectangles]
-    working["y"] = [rect["y"] for rect in rectangles]
-    working["dx"] = [rect["dx"] for rect in rectangles]
-    working["dy"] = [rect["dy"] for rect in rectangles]
-    working["x2"] = working["x"] + working["dx"]
-    working["y2"] = working["y"] + working["dy"]
+    working["share"] = working["total_revenue"].div(total).map(lambda v: f"{v:.0%}")
+    working["label"] = working["hierarchy1_id"].astype(str)
 
     return working
 
 
-def create_hierarchy1_chart(df: pd.DataFrame) -> alt.Chart:
-    """Create an Altair treemap chart from processed hierarchy 1 data."""
-    chart = (
-        alt.Chart(df)
-        .transform_joinaggregate(total_sum="sum(total_revenue)")
-        .transform_calculate(share="format(datum.total_revenue / datum.total_sum, '.0%')")
-        .mark_rect()
-        .encode(
-            x=alt.X("x:Q", scale=alt.Scale(domain=[0, 100]), axis=None),
-            y=alt.Y("y:Q", scale=alt.Scale(domain=[0, 100]), axis=None),
-            x2="x2:Q",
-            y2="y2:Q",
-            color=alt.Color("total_revenue:Q", title="Revenue"),
-            tooltip=[
-                alt.Tooltip("hierarchy1_id:N", title="Hierarchy 1"),
-                alt.Tooltip("total_revenue:Q", title="Revenue", format=",.0f"),
-                alt.Tooltip("share:N", title="Share"),
-            ],
+def create_hierarchy1_chart(df: pd.DataFrame) -> go.Figure:
+    """Create a Plotly treemap figure from processed hierarchy 1 data."""
+    figure = go.Figure(
+        go.Treemap(
+            labels=df["label"],
+            parents=["" for _ in df.index],
+            values=df["total_revenue"],
+            customdata=df["share"],
+            marker=dict(colors=df["total_revenue"], colorscale="Blues"),
+            texttemplate="<b>%{label}</b><br>%{value:,.0f}<br>%{customdata}",
+            hovertemplate=(
+                "Hierarchy 1: %{label}<br>Revenue: %{value:,.0f}<br>"
+                "Share: %{customdata}<extra></extra>"
+            ),
         )
-        .properties(title="Relative Total Revenue by Hierarchy 1", width=600, height=500)
-        .configure_title(fontSize=24, anchor="start", fontWeight="bold")
     )
 
-    return chart
+    figure.update_layout(
+        title="Relative Total Revenue by Hierarchy 1",
+        margin=dict(t=80, l=0, r=0, b=0),
+    )
+
+    return figure
 
 
-def build_hierarchy1_treemap_chart() -> alt.Chart:
+def build_hierarchy1_treemap_chart() -> go.Figure:
     """Convenience helper that loads, processes, and plots the treemap chart."""
     raw_df = load_hierarchy1_data()
     processed_df = process_hierarchy1_data(raw_df)

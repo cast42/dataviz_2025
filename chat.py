@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import tempfile
-
 import chainlit as cl
 
 from tree_map import (
@@ -53,24 +51,18 @@ async def on_action(action: cl.Action):
         processed_df = process_hierarchy1_data(raw_df)
 
         await cl.Message(
-            content="**Step 3/3:** Creating the Altair treemap visualization."
+            content="**Step 3/3:** Creating the interactive Plotly treemap visualization."
         ).send()
         chart = create_hierarchy1_chart(processed_df)
 
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-        tmp_path = tmp.name
-        tmp.close()
-
-        chart.save(tmp_path, format="png")
-
-        chart_element = cl.Image(
+        chart_element = cl.Plotly(
             name="hierarchy1_treemap",
-            path=tmp_path,
+            figure=chart,
             display="inline",
         )
 
         await cl.Message(
-            content="Here is the Altair treemap showing the relative total revenue for hierarchy 1:",
+            content="Here is the Plotly treemap showing the relative total revenue for hierarchy 1:",
             elements=[chart_element],
         ).send()
     else:

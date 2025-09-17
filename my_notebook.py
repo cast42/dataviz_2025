@@ -6,13 +6,13 @@ app = marimo.App(width="medium")
 
 @app.cell
 def _():
-    import duckdb
     import altair as alt
+    import duckdb
 
     con = duckdb.connect()
-    SQL = ''' SELECT * FROM read_parquet('data/sales_stores_hierarchy_merged.parquet'); '''
+    SQL = """ SELECT * FROM read_parquet('data/sales_stores_hierarchy_merged.parquet'); """
     con.sql(SQL).to_view("SALES")
-    con.sql('describe SALES ').show()
+    con.sql("describe SALES ").show()
     return alt, con
 
 
